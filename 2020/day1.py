@@ -1,6 +1,5 @@
 from aocd import get_data
 #set session token first - https://github.com/wimglenn/advent-of-code-wim/issues/1
-import re
 
 #Problem statement: https://adventofcode.com/2020/day/1
 
