@@ -1,5 +1,5 @@
 from aocd import get_data
-#set session token first
+#set session token first - https://github.com/wimglenn/advent-of-code-wim/issues/1
 
 #Problem statement: https://adventofcode.com/2022/day/1
  
@@ -8,13 +8,13 @@ input = get_data(day=1, year=2022).split('\n')
 def calories_totals():
     '''Sum up the total calories in each elf's pack'''
     elves = []
-    curr_elf_cals = 0
+    curr_elf = 0
     for item in input:
         if item != '':
-            curr_elf_cals += int(item)
+            curr_elf += int(item)
         else:
-            elves.append(curr_elf_cals)
-            curr_elf_cals = 0
+            elves.append(curr_elf)
+            curr_elf = 0
     
     return elves
 
