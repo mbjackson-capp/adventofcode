@@ -18,7 +18,7 @@ def part1():
         halfway = len(rucksack) // 2
         left = set(rucksack[0:halfway])
         right = set(rucksack[halfway:])
-        common_item = list(left.intersection(right))[0] #extract letter
+        common_item = list(set.intersection(left, right))[0] #extract letter
         priority_sum += priority(common_item)
     return priority_sum
 
@@ -28,16 +28,14 @@ def part2():
     curr_group = []
     for i, elf in enumerate(input):
         if i % GROUP_SIZE == 0 and i != 0:
-            badge_sum += priority(find_badge(curr_group))
+            badge_sum += priority(badge(curr_group))
             curr_group = []
         curr_group.append(elf)
     return badge_sum
 
-def find_badge(group):
-    first = set(group[0])
-    second = set(group[1])
-    third = set(group[2])
-    return list(first.intersection(second).intersection(third))[0]
+def badge(group):
+    knapsacks = [set(elf) for elf in group]
+    return list(set.intersection(*knapsacks))[0] #extract common letter
 
 print(f"Answer for part 1: {part1()}")
 print(f"Answer for part 2: {part2()}")
