@@ -4,7 +4,7 @@ import numpy as np
 import math
 import re
 
-#Problem statement: https://adventofcode.com/2021/day/3
+#Problem statement: https://adventofcode.com/2021/day/4
 
 input = get_data(day=4, year=2021).split('\n')
 
