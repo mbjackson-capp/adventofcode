@@ -45,7 +45,7 @@ def expand(cavern):
 
 def dijkstra_pq(cavern, start_node=(0,0), end_node='default', part=1):
     '''
-    Priority queue implementation inspired by Brad Field,
+    Priority queue implementation inspired by
     https://bradfieldcs.com/algos/graphs/dijkstras-algorithm/.
     Comments on steps adapted from Wikipedia, "Dijkstra's algorithm"
     '''
