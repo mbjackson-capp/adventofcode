@@ -56,7 +56,7 @@ def dijkstra_climb(peak, start_node=(0,0), end_node='default', part=1):
     Use Dijkstra's algorithm to find a shortest path up a map where letters
     represent elevations. If adjacent spot is at most one letter later than
     current spot, it can be added to path; if not, it can't.
-    Priority queue implementation inspired by Brad Field,
+    Priority queue implementation inspired by
     https://bradfieldcs.com/algos/graphs/dijkstras-algorithm/.
     Comments on steps adapted from Wikipedia, "Dijkstra's algorithm"
     '''
@@ -73,8 +73,6 @@ def dijkstra_climb(peak, start_node=(0,0), end_node='default', part=1):
             node = (x, y)
             distances[node] = 0 if node == start_node else INF
 
-    visited = {}
-
     priority_queue = [(0, start_node)]
 
     while len(priority_queue) > 0:
@@ -90,7 +88,6 @@ def dijkstra_climb(peak, start_node=(0,0), end_node='default', part=1):
         neighbors = [pt for pt in neighbor_locs(peak, curr_x, curr_y) 
                      if passable(peak, curr_node, pt)]
         for neighbor in neighbors:
-            neigh_x, neigh_y = neighbor
             neigh_dist = curr_dist + 1
             # Compare newly calculated tentative distance to the earlier value
             # and keep the smaller of the two
