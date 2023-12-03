@@ -2,7 +2,7 @@ from aocd import get_data
 #set session token first - https://github.com/wimglenn/advent-of-code-wim/issues/1
 import re
 
-#Problem statement: https://adventofcode.com/2022/day/1
+#Problem statement: https://adventofcode.com/2023/day/1
  
 input = get_data(day=1, year=2023).split('\n')
 only_digits_input = [re.sub(r'[A-Za-z]+', '', i) for i in input]
@@ -76,9 +76,6 @@ newer_digits = [''.join([numberize(j) for j in line]) for line in new_digits]
 
 part2_calibrations = [int(calibration_digits(i)) for i in newer_digits]
 part2 = sum(part2_calibrations)
-
-
-
 
 
 if __name__ == '__main__':
