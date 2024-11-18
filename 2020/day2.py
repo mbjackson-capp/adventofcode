@@ -7,28 +7,23 @@ input = get_data(day=2, year=2020).split("\n")
 input = [re.split(r"-|:?\s", row) for row in input]
 
 
-def part1():
+def validate_all(part: int = 1) -> int:
     valids = 0
     for row in input:
         first_num, second_num, letter, passwd = row
-        occurrences = len(re.findall(letter, passwd))
-        if (occurrences >= int(first_num)) and (occurrences <= int(second_num)):
-            valids += 1
-    return valids
-
-
-def part2():
-    valids = 0
-    for row in input:
-        first_num, second_num, letter, passwd = row
-        # use bitwise xor on output of two boolean statements
-        if (passwd[int(first_num) - 1] == letter) ^ (
-            passwd[int(second_num) - 1] == letter
-        ):
-            valids += 1
+        if part == 1:
+            occurrences = len(re.findall(letter, passwd))
+            if (occurrences >= int(first_num)) and (occurrences <= int(second_num)):
+                valids += 1
+        elif part == 2:
+            # use bitwise xor on output of two boolean statements
+            if (passwd[int(first_num) - 1] == letter) ^ (
+                passwd[int(second_num) - 1] == letter
+            ):
+                valids += 1
     return valids
 
 
 if __name__ == "__main__":
-    print(part1())
-    print(part2())
+    print(f"Solution to part 1: {validate_all(part=1)}")
+    print(f"Solution to part 2: {validate_all(part=2)}")
