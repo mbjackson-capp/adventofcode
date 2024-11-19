@@ -5,25 +5,19 @@ from aocd import get_data
 # Problem statement: https://adventofcode.com/2019/day/3
 
 input = get_data(day=3, year=2019).split("\n")
-wire0, wire1 = [wire.split(",") for wire in input]
-
-wire0_points = set()
-wire1_points = set()
-
-central_port = (0, 0)
-curr_loc = [0, 0]
 
 
-def reset():
-    """
-    Put the current location of the tracker back at the central port.
-    You could probably make new trackers as objects come to think of it.
-    """
-    global curr_loc
-    curr_loc = [0, 0]
+class Tracker:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
+    def reset(self):
+        self.x = 0
+        self.y = 0
 
 
-def read_segment(segment, target_set):
+def read_segment(segment, target_set, t: Tracker):
     """
     Takes in a description of a segment of wire (e.g. "U330") and converts it
     into a set of points. Then adds those points to a set (consisting of all
@@ -36,32 +30,19 @@ def read_segment(segment, target_set):
         -target_set(set): a set of points that will be written to.
     Returns: None, modifies target_set in place
     """
-    global curr_loc
 
-    # print(segment)
     dir = segment[0]
     dist = int(segment[1:])
-    for i in range(dist):
+    for _ in range(dist):
         if dir == "R":
-            curr_loc[0] += 1
+            t.x += 1
         elif dir == "L":
-            curr_loc[0] -= 1
+            t.x -= 1
         elif dir == "U":
-            curr_loc[1] += 1
+            t.y += 1
         elif dir == "D":
-            curr_loc[1] -= 1
-        # print(curr_loc)
-        target_set.add(tuple(curr_loc))
-
-
-for segment in wire0:
-    read_segment(segment, wire0_points)
-reset()
-for segment in wire1:
-    read_segment(segment, wire1_points)
-
-intersections = wire0_points.intersection(wire1_points)
-# print(intersections)
+            t.y -= 1
+        target_set.add((t.x, t.y))
 
 
 def manhattan_dist(p1, p2):
@@ -76,60 +57,61 @@ def manhattan_dist(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 
-manhattans = [manhattan_dist(point, (0, 0)) for point in list(intersections)]
-print(min(manhattans))
-
-# you calculated list of intersections already. No need to recalculate it
-
-
-def intersection_distances(wire, intersections):
+def intersection_distances(wire, intersections, t: Tracker):
     """
-    Takes in a wire (list of segments like "U330") and traverses it point by
-    point. If at any point it reaches a known intersection, note the intersection
-    adn
-    into a set of points. Then adds those points to a set (consisting of all
-    points previously recorded on the wire).
-
-    Inputs:
-        -segment(str): an instruction such as "U330" or "D57", which denotes
-        the direction in which the wire goes and how far it's going in that
-        direction
-        -target_set(set): a set of points that will be written to.
-    Returns: None, modifies target_set in place
+    Helper function for part 2. Assumes that list of intersections was already
+    calculated when solving part 1. no need to recalculate it.
     """
-    global curr_loc
 
     total_traversed = 0
     inter_dict = {}
 
-    # print(segment)
     for segment in wire:
         dir = segment[0]
         dist = int(segment[1:])
-        for i in range(dist):
+        for _ in range(dist):
             if dir == "R":
-                curr_loc[0] += 1
+                t.x += 1
             elif dir == "L":
-                curr_loc[0] -= 1
+                t.x -= 1
             elif dir == "U":
-                curr_loc[1] += 1
+                t.y += 1
             elif dir == "D":
-                curr_loc[1] -= 1
-            # print(curr_loc)
+                t.y -= 1
             total_traversed += 1
-            if tuple(curr_loc) in intersections:
-                inter_dict[tuple(curr_loc)] = total_traversed
+            if (t.x, t.y) in intersections:
+                inter_dict[(t.x, t.y)] = total_traversed
 
     return inter_dict
 
 
-reset()
-distances0 = intersection_distances(wire0, intersections)
-reset()
-distances1 = intersection_distances(wire1, intersections)
+def main():
+    wire0, wire1 = [wire.split(",") for wire in input]
+    wire0_points = set()
+    wire1_points = set()
 
-joint_distances = []
-for point, dist in distances0.items():
-    if point in distances1:
-        joint_distances.append(dist + distances1[point])
-print(min(joint_distances))
+    t = Tracker()
+    for segment in wire0:
+        read_segment(segment, wire0_points, t)
+    t.reset()
+    for segment in wire1:
+        read_segment(segment, wire1_points, t)
+
+    intersections = wire0_points.intersection(wire1_points)
+    manhattans = [manhattan_dist(point, (0, 0)) for point in list(intersections)]
+    print(f"Part 1 solution: {min(manhattans)}")
+
+    t.reset()
+    distances0 = intersection_distances(wire0, intersections, t)
+    t.reset()
+    distances1 = intersection_distances(wire1, intersections, t)
+
+    joint_distances = []
+    for point, dist in distances0.items():
+        if point in distances1:
+            joint_distances.append(dist + distances1[point])
+    print(f"Part 2 solution: {min(joint_distances)}")
+
+
+if __name__ == "__main__":
+    main()
