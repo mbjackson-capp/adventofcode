@@ -8,9 +8,11 @@ class Computer:
     Intcode computer for problems in Advent of Code 2019.
     """
 
-    def __init__(self):
+    def __init__(self, day: int = None):
         self.pointer = 0
         self.opcode = 0
+        self.day = day  # allow for day-specific modifications to procedure
+        self.latest_output = None
         self.instructions = {
             1: {"name": "add", "params": 3},
             2: {"name": "multiply", "params": 3},
@@ -97,7 +99,9 @@ class Computer:
                 # which outputs 999 in the "less than 8" case only when given
                 # print(f"Output {intcode[self.pointer + 1]}") and
                 # "IndexError: list index out of range" with the below. TODO: debug
-                print(f"Output {intcode[intcode[self.pointer + 1]]}")
+                thing_outputted = intcode[intcode[self.pointer + 1]]
+                print(f"Output {thing_outputted}")
+                self.latest_output = thing_outputted
 
             elif self.opcode == 5:  # JUMP-IF-TRUE
                 num = (
@@ -184,7 +188,10 @@ class Computer:
             elif self.opcode == 99:  # HALT
                 printv(f"Output at position 0: {intcode[0]}", verbose)
                 printv("HALT", verbose)
-                return intcode[0]
+                if self.day == 2:
+                    return intcode[0]
+                else:
+                    return self.latest_output
 
             # for opcodes 5 and 6, you step ahead only if you didn't jump
             self.step_ahead(verbose)

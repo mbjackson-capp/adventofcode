@@ -13,10 +13,8 @@ def provide_inputs(intcode, noun, verb):
     return intcode
 
 
-c = Computer()
-
-
 def part1(input, verbose=False):
+    c = Computer(day=2)
     restore_1202 = provide_inputs(input, 12, 2)
     part1_output = c.process(restore_1202, verbose=verbose)
     return part1_output
@@ -29,7 +27,7 @@ def part2():
             # re-copy from source data every time to hard reset
             inputt = [int(i) for i in get_data(day=2, year=2019).split(",")]
             fresh_intcode = provide_inputs(inputt, noun, verb)
-            c = Computer()
+            c = Computer(day=2)
             output = c.process(fresh_intcode, verbose=False)
             if output == DESIRED_OUTPUT:
                 return (100 * noun) + verb
