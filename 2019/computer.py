@@ -121,7 +121,6 @@ class Computer:
                     continue
                 else:
                     printv("Jump condition not met", verbose)
-                    # self.step_ahead(verbose)
 
             elif self.opcode == 6:  # JUMP-IF-FALSE
                 num = (
@@ -141,7 +140,6 @@ class Computer:
                     continue
                 else:
                     printv("Jump condition not met", verbose)
-                    # self.step_ahead(verbose)
 
             elif self.opcode == 7:  # LESS THAN
                 num1 = (
@@ -194,7 +192,7 @@ class Computer:
 
             printv(f"Intcode address 32 is currently {intcode[32]}", verbose)
 
-            # if self.opcode not in [5, 6]:  # step ahead only if you didn't jump?
+            # for opcodes 5 and 6, you step ahead only if you didn't jump
             self.step_ahead(verbose)
 
 
