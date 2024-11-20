@@ -12,6 +12,7 @@ class Computer:
         self.pointer = 0
         self.opcode = 0
         self.day = day  # allow for day-specific modifications to procedure
+        self.provided_inputs = []
         self.latest_output = None
         self.instructions = {
             1: {"name": "add", "params": 3},
@@ -36,7 +37,14 @@ class Computer:
         self.pointer = pos
         printv(f"Pointer jumped to position {pos}", verbose)
 
-    def process(self, intcode, verbose=False):
+    def process(
+        self,
+        intcode: list[int],
+        preset_inputs: list[int] | None = None,
+        verbose: bool = False,
+    ):
+        if preset_inputs is not None:
+            self.provided_inputs = preset_inputs
         while True:  # assuming it'll halt...
             printv(f"\nCurrently at position {self.pointer}", verbose)
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
@@ -87,7 +95,11 @@ class Computer:
                 intcode[store_pos] = result
 
             elif self.opcode == 3:  # INPUT
-                intake = int(input("Please input an integer: "))
+                if len(self.provided_inputs) > 0:
+                    # consume pre-provided inputs as long as there are any
+                    intake = self.provided_inputs.pop()
+                else:
+                    intake = int(input("Please input an integer: "))
                 store_pos = intcode[self.pointer + 1]
                 printv(
                     f"Storing input value ({intake}) at position {store_pos}", verbose
