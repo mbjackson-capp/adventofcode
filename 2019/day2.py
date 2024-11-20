@@ -29,7 +29,7 @@ def part2():
             # re-copy from source data every time to hard reset
             inputt = [int(i) for i in get_data(day=2, year=2019).split(",")]
             fresh_intcode = provide_inputs(inputt, noun, verb)
-            c = Computer(intcode=fresh_intcode)
+            c = Computer()
             output = c.process(fresh_intcode, verbose=False)
             if output == DESIRED_OUTPUT:
                 return (100 * noun) + verb

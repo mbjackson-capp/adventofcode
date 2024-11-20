@@ -8,10 +8,9 @@ class Computer:
     Intcode computer for problems in Advent of Code 2019.
     """
 
-    def __init__(self, intcode=None):
+    def __init__(self):
         self.pointer = 0
         self.opcode = 0
-        self.memory = intcode  # Intcode object goes here
         self.instructions = {
             1: {"name": "add", "params": 3},
             2: {"name": "multiply", "params": 3},
@@ -23,9 +22,6 @@ class Computer:
             8: {"name": "equals", "params": 3},
             99: {"name": "halt", "params": 0},
         }
-
-    def load_intcode(self, intcode):
-        self.memory = intcode
 
     def step_ahead(self, verbose=False):
         steps_to_take = 1 + self.instructions[self.opcode]["params"]
