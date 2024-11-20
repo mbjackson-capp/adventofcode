@@ -190,8 +190,6 @@ class Computer:
                 printv("HALT", verbose)
                 return intcode[0]
 
-            printv(f"Intcode address 32 is currently {intcode[32]}", verbose)
-
             # for opcodes 5 and 6, you step ahead only if you didn't jump
             self.step_ahead(verbose)
 
