@@ -48,19 +48,19 @@ class Computer:
 
     def process(
         self,
-        intcode: list[int],
-        preset_inputs: list[int] | None = None,
+        intcode: list[int] | None = None,
+        initial_inputs: list[int] | None = None,
         pause_at_output: bool = False,
         verbose: bool = False,
     ):
         # TODO: self.intcode = intcode; CHANGE ALL INSTANCES OF "intcode" TO self.intcode THROUGHOUT
         if len(self.memory) == 0:
             self.memory = dictify(intcode)
-            printv(f"Memory overwritten with intcode: {intcode}", verbose)
+            printv(f"Memory overwritten with new intcode: {intcode}", verbose)
 
         self.status = "running"
-        if preset_inputs is not None:
-            self.provided_inputs = preset_inputs
+        if initial_inputs is not None:
+            self.provided_inputs = initial_inputs
         while True:  # assuming it'll halt...
             printv(f"\nCurrently at position {self.ptr}", verbose)
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
