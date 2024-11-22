@@ -3,18 +3,26 @@ def printv(obj, v=False):
         print(obj)
 
 
+def dictify(intcode: list[int]) -> dict:
+    return {i: v for i, v in enumerate(intcode)} if intcode is not None else {}
+
+
 class Computer:
     """
     Intcode computer for problems in Advent of Code 2019.
     """
 
-    def __init__(self, day: int = None):
-        self.pointer = 0
+    def __init__(self, intcode: list[int] | None = None, day: int | None = None):
+        self.memory = dictify(intcode)
+        self.ptr = 0
         self.opcode = 0
         self.day = day  # allow for day-specific modifications to procedure
-        self.provided_inputs = []
+        self.provided_inputs = (
+            []
+        )  # TODO: method to add future inputs directly to this w/o beginning processing
+        self.status = "new"  # other values: "running", "paused", "halted"
         self.latest_output = None
-        self.instructions = {
+        self.instruction_types = {
             1: {"name": "add", "params": 3},
             2: {"name": "multiply", "params": 3},
             3: {"name": "input", "params": 1},
@@ -27,104 +35,112 @@ class Computer:
         }
 
     def step_ahead(self, verbose=False):
-        steps_to_take = 1 + self.instructions[self.opcode]["params"]
+        steps_to_take = 1 + self.instruction_types[self.opcode]["params"]
         printv(
-            f"Opcode was {self.opcode} so moving ahead {steps_to_take} steps.", verbose
+            f"Opcode was {self.opcode} so moving pointer ahead {steps_to_take} steps.",
+            verbose,
         )
-        self.pointer += steps_to_take
+        self.ptr += steps_to_take
 
     def jump(self, pos, verbose=False):
-        self.pointer = pos
+        self.ptr = pos
         printv(f"Pointer jumped to position {pos}", verbose)
 
     def process(
         self,
         intcode: list[int],
         preset_inputs: list[int] | None = None,
+        pause_at_output: bool = False,
         verbose: bool = False,
     ):
+        # TODO: self.intcode = intcode; CHANGE ALL INSTANCES OF "intcode" TO self.intcode THROUGHOUT
+        if len(self.memory) == 0:
+            self.memory = dictify(intcode)
+            printv(f"Memory overwritten with intcode: {intcode}", verbose)
+
+        self.status = "running"
         if preset_inputs is not None:
             self.provided_inputs = preset_inputs
         while True:  # assuming it'll halt...
-            printv(f"\nCurrently at position {self.pointer}", verbose)
+            printv(f"\nCurrently at position {self.ptr}", verbose)
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
-                intcode[self.pointer]
+                self.memory[self.ptr]
             )
             self.opcode = opcode
             printv(
-                f"Current opcode: {self.opcode} ({self.instructions[self.opcode]['name']})",
+                f"Current opcode: {self.opcode} ({self.instruction_types[self.opcode]['name']})",
                 verbose,
             )
 
             if self.opcode == 1:  # ADD
                 num1 = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 num2 = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
-                store_pos = intcode[self.pointer + 3]
+                store_pos = self.memory[self.ptr + 3]
 
                 printv(f"Take the sum of {num1} and {num2}:", verbose)
                 result = num1 + num2
                 printv(result, verbose)
                 printv(f"And store it at {store_pos}", verbose)
-                intcode[store_pos] = result
+                self.memory[store_pos] = result
 
             elif self.opcode == 2:  # MULTIPLY
                 num1 = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 num2 = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
-                store_pos = intcode[self.pointer + 3]
+                store_pos = self.memory[self.ptr + 3]
 
                 printv(f"Take the product of {num1} and {num2}:", verbose)
                 result = num1 * num2
                 printv(result, verbose)
                 printv(f"And store it at {store_pos}", verbose)
-                intcode[store_pos] = result
+                self.memory[store_pos] = result
 
             elif self.opcode == 3:  # INPUT
                 if len(self.provided_inputs) > 0:
                     # consume pre-provided inputs as long as there are any
-                    intake = self.provided_inputs.pop()
+                    intake = self.provided_inputs.pop(0)
                 else:
                     intake = int(input("Please input an integer: "))
-                store_pos = intcode[self.pointer + 1]
+                store_pos = self.memory[self.ptr + 1]
                 printv(
                     f"Storing input value ({intake}) at position {store_pos}", verbose
                 )
-                intcode[store_pos] = intake
+                self.memory[store_pos] = intake
 
             elif self.opcode == 4:  # OUTPUT
                 # works for all examples except the "larger example" in day 5 part 2,
                 # which outputs 999 in the "less than 8" case only when given
-                # print(f"Output {intcode[self.pointer + 1]}") and
+                # print(f"Output {self.memory[self.ptr + 1]}") and
                 # "IndexError: list index out of range" with the below. TODO: debug
-                thing_outputted = intcode[intcode[self.pointer + 1]]
+                thing_outputted = self.memory[self.memory[self.ptr + 1]]
                 print(f"Output {thing_outputted}")
                 self.latest_output = thing_outputted
 
             elif self.opcode == 5:  # JUMP-IF-TRUE
                 num = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 jump_pos = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
                 printv(f"Does {num} != 0?", verbose)
                 if num != 0:
@@ -136,14 +152,14 @@ class Computer:
 
             elif self.opcode == 6:  # JUMP-IF-FALSE
                 num = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 jump_pos = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
                 printv(f"Does {num} = 0?", verbose)
                 if num == 0:
@@ -155,58 +171,68 @@ class Computer:
 
             elif self.opcode == 7:  # LESS THAN
                 num1 = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 num2 = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
-                store_pos = intcode[self.pointer + 3]
+                store_pos = self.memory[self.ptr + 3]
                 printv(f"Is {num1} < {num2}?", verbose)
                 if num1 < num2:
                     printv("Less-than condition met", verbose)
                     printv(f"Storing value (1) at position {store_pos}", verbose)
-                    intcode[store_pos] = 1
+                    self.memory[store_pos] = 1
                 else:
                     printv("Less-than condition not met", verbose)
                     printv(f"Storing value (0) at position {store_pos}", verbose)
-                    intcode[store_pos] = 0
+                    self.memory[store_pos] = 0
 
             elif self.opcode == 8:  # EQUALS
                 num1 = (
-                    intcode[self.pointer + 1]  # immediate mode
+                    self.memory[self.ptr + 1]  # immediate mode
                     if param1_mode == 1
-                    else intcode[intcode[self.pointer + 1]]  # position mode
+                    else self.memory[self.memory[self.ptr + 1]]  # position mode
                 )
                 num2 = (
-                    intcode[self.pointer + 2]  # immediate mode
+                    self.memory[self.ptr + 2]  # immediate mode
                     if param2_mode == 1
-                    else intcode[intcode[self.pointer + 2]]  # position mode
+                    else self.memory[self.memory[self.ptr + 2]]  # position mode
                 )
-                store_pos = intcode[self.pointer + 3]
+                store_pos = self.memory[self.ptr + 3]
                 printv(f"Does {num1} = {num2}?", verbose)
                 if num1 == num2:
                     printv("Equality condition met", verbose)
                     printv(f"Storing value (1) at position {store_pos}", verbose)
-                    intcode[store_pos] = 1
+                    self.memory[store_pos] = 1
                 else:
                     printv("Equality condition not met", verbose)
                     printv(f"Storing value (0) at position {store_pos}", verbose)
-                    intcode[store_pos] = 0
+                    self.memory[store_pos] = 0
 
             elif self.opcode == 99:  # HALT
-                printv(f"Output at position 0: {intcode[0]}", verbose)
+                printv(f"Output at position 0: {self.memory[0]}", verbose)
                 printv("HALT", verbose)
+                self.status = "halted"
                 if self.day == 2:
-                    return intcode[0]
+                    return self.memory[0]
                 else:
                     return self.latest_output
 
             # for opcodes 5 and 6, you step ahead only if you didn't jump
             self.step_ahead(verbose)
+
+            if self.opcode == 4 and pause_at_output:
+                self.status = "paused"
+                return self.latest_output
+
+    def resume(self, new_inputs=list[int]):
+        # TODO: fill this out. actually may not be strictly necessary with edits to process()
+        self.status = "running"
+        pass
 
 
 def parse_number(number: int) -> tuple[int, int, int, int]:
