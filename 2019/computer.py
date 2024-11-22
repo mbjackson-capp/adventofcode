@@ -53,7 +53,6 @@ class Computer:
         pause_at_output: bool = False,
         verbose: bool = False,
     ):
-        # TODO: self.intcode = intcode; CHANGE ALL INSTANCES OF "intcode" TO self.intcode THROUGHOUT
         if len(self.memory) == 0:
             self.memory = dictify(intcode)
             printv(f"Memory overwritten with new intcode: {intcode}", verbose)
@@ -61,7 +60,7 @@ class Computer:
         self.status = "running"
         if initial_inputs is not None:
             self.provided_inputs = initial_inputs
-        while True:  # assuming it'll halt...
+        while self.status != "halted":
             printv(f"\nCurrently at position {self.ptr}", verbose)
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
                 self.memory[self.ptr]
@@ -229,11 +228,6 @@ class Computer:
                 self.status = "paused"
                 return self.latest_output
 
-    def resume(self, new_inputs=list[int]):
-        # TODO: fill this out. actually may not be strictly necessary with edits to process()
-        self.status = "running"
-        pass
-
 
 def parse_number(number: int) -> tuple[int, int, int, int]:
     """Take in an integer of up to five digits in length and get back an
@@ -246,18 +240,3 @@ def parse_number(number: int) -> tuple[int, int, int, int]:
     param2_mode = int(abcde[1])
     param3_mode = int(abcde[0])
     return opcode, param1_mode, param2_mode, param3_mode
-
-
-class Intcode:
-    """In progress, not currently used"""
-
-    def __init__(self, numlist):
-        self.code = numlist
-        # TODO: put some asserts here to make sure all entries are numbers
-        if 99 not in self.intcode:
-            print("Warning: this intcode doesn't contain 99 -- may fail to halt")
-
-    # make sure that however you implement this, a reset is possible
-    def provide_inputs(self, noun, verb):
-        self.code[1] = noun
-        self.code[2] = verb

@@ -72,5 +72,8 @@ def part2_core(amps: list[Computer], seq: list[int]) -> int:
     return output_signal
 
 
-print(f"\n\nPart 1 solution: {find_optimal_output(PART1_SETTING_SEQUENCES)}")
-print(f"\n\nPart 2 solution: {find_optimal_output(PART2_SETTING_SEQUENCES, part=2)}")
+if __name__ == "__main__":
+    part1_solution = find_optimal_output(PART1_SETTING_SEQUENCES)
+    part2_solution = find_optimal_output(PART2_SETTING_SEQUENCES, part=2)
+    print(f"\nPart 1 solution: {part1_solution}")
+    print(f"\nPart 2 solution: {part2_solution}")
