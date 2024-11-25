@@ -87,8 +87,9 @@ class Computer:
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
                 self.memory[self.ptr]
             )
-            print(
-                f"Outputs of parse_number: {opcode, param1_mode, param2_mode, param3_mode}"
+            printv(
+                f"Outputs of parse_number: {opcode, param1_mode, param2_mode, param3_mode}",
+                verbose,
             )
             self.opcode = opcode
             printv(
