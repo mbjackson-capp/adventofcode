@@ -58,7 +58,9 @@ class Computer:
         try:
             return self.memory[addr]
         except KeyError:  # far-off memory always initializes at 0
-            self.memory[addr] = 0
+            for i in range(max(self.memory.keys(), addr + 1)):
+                self.memory[i] = 0
+            # self.memory[addr] = 0
             return self.memory[addr]
 
     def process(
@@ -67,13 +69,14 @@ class Computer:
         initial_inputs: list[int] | None = None,
         pause_at_output: bool = False,
         verbose: bool = False,
+        reset: bool = False,
     ):
         if intcode is not None:
             self.memory = dictify(intcode)
             printv(f"Memory overwritten with new intcode: {intcode}", verbose)
             printv(self.memory, verbose)
 
-        if self.status == "new":
+        if self.status == "new" or reset:
             self.ptr = 0
             printv(f"Pointer reset to {self.ptr}", verbose)
             self.relative_base = 0
@@ -101,7 +104,11 @@ class Computer:
             if self.opcode == 1:  # ADD
                 num1 = self.value(param=1, mode=param1_mode)
                 num2 = self.value(param=2, mode=param2_mode)
-                store_pos = self.memory[self.ptr + 3]
+                store_pos = (
+                    self.memory[self.ptr + 3] + self.relative_base
+                    if param3_mode == 2
+                    else self.memory[self.ptr + 3]
+                )
 
                 printv(f"Take the sum of {num1} and {num2}:", verbose)
                 result = num1 + num2
@@ -112,7 +119,11 @@ class Computer:
             elif self.opcode == 2:  # MULTIPLY
                 num1 = self.value(param=1, mode=param1_mode)
                 num2 = self.value(param=2, mode=param2_mode)
-                store_pos = self.memory[self.ptr + 3]
+                store_pos = (
+                    self.memory[self.ptr + 3] + self.relative_base
+                    if param3_mode == 2
+                    else self.memory[self.ptr + 3]
+                )
 
                 printv(f"Take the product of {num1} and {num2}:", verbose)
                 result = num1 * num2
@@ -126,11 +137,15 @@ class Computer:
                     intake = self.provided_inputs.pop(0)
                 else:
                     intake = int(input("Please input an integer: "))
-                # if param1_mode == 1:
-                #     raise ValueError(
-                #         "Parameters that an instruction writes to will never be in immediate mode"
-                #     )
-                store_pos = self.memory[self.ptr + 1]
+                if param1_mode == 1:
+                    raise ValueError(
+                        "Parameters that an instruction writes to will never be in immediate mode"
+                    )
+                store_pos = (
+                    self.memory[self.ptr + 1] + self.relative_base
+                    if param1_mode == 2
+                    else self.memory[self.ptr + 1]
+                )  # TODO: fix this to use value()
                 printv(
                     f"Storing input value ({intake}) at position {store_pos}", verbose
                 )
@@ -171,7 +186,11 @@ class Computer:
             elif self.opcode == 7:  # LESS THAN
                 num1 = self.value(param=1, mode=param1_mode)
                 num2 = self.value(param=2, mode=param2_mode)
-                store_pos = self.memory[self.ptr + 3]
+                store_pos = (
+                    self.memory[self.ptr + 3] + self.relative_base
+                    if param3_mode == 2
+                    else self.memory[self.ptr + 3]
+                )
                 printv(f"Is {num1} < {num2}?", verbose)
                 if num1 < num2:
                     printv("Less-than condition met", verbose)
@@ -185,7 +204,11 @@ class Computer:
             elif self.opcode == 8:  # EQUALS
                 num1 = self.value(param=1, mode=param1_mode)
                 num2 = self.value(param=2, mode=param2_mode)
-                store_pos = self.memory[self.ptr + 3]
+                store_pos = (
+                    self.memory[self.ptr + 3] + self.relative_base
+                    if param3_mode == 2
+                    else self.memory[self.ptr + 3]
+                )
                 printv(f"Does {num1} = {num2}?", verbose)
                 if num1 == num2:
                     printv("Equality condition met", verbose)
