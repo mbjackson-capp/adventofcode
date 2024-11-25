@@ -16,6 +16,7 @@ class Computer:
         self.memory = dictify(intcode)
         self.ptr = 0
         self.opcode = 0
+        self.relative_base = 0
         self.day = day  # allow for day-specific modifications to procedure
         self.provided_inputs = (
             []
@@ -31,6 +32,7 @@ class Computer:
             6: {"name": "jump-if-false", "params": 2},
             7: {"name": "less than", "params": 3},
             8: {"name": "equals", "params": 3},
+            9: {"name": "adjust-relative-base", "params": 1},
             99: {"name": "halt", "params": 0},
         }
 
@@ -46,6 +48,19 @@ class Computer:
         self.ptr = pos
         printv(f"Pointer jumped to position {pos}", verbose)
 
+    def value(self, param: int, mode: int):
+        if mode == 0:  # position mode
+            addr = self.memory[self.ptr + param]
+        elif mode == 1:  # immediate mode
+            addr = self.ptr + param
+        elif mode == 2:  # relative mode
+            addr = self.relative_base + self.memory[self.ptr + param]
+        try:
+            return self.memory[addr]
+        except KeyError:  # far-off memory always initializes at 0
+            self.memory[addr] = 0
+            return self.memory[addr]
+
     def process(
         self,
         intcode: list[int] | None = None,
@@ -53,60 +68,55 @@ class Computer:
         pause_at_output: bool = False,
         verbose: bool = False,
     ):
-        if len(self.memory) == 0:
+        if intcode is not None:
             self.memory = dictify(intcode)
             printv(f"Memory overwritten with new intcode: {intcode}", verbose)
+            printv(self.memory, verbose)
 
+        if self.status == "new":
+            self.ptr = 0
+            printv(f"Pointer reset to {self.ptr}", verbose)
+            self.relative_base = 0
+            printv(f"Relative base reset to {self.relative_base}", verbose)
         self.status = "running"
         if initial_inputs is not None:
             self.provided_inputs = initial_inputs
         while self.status != "halted":
             printv(f"\nCurrently at position {self.ptr}", verbose)
+            printv(f"Value at position {self.ptr}: {self.memory[self.ptr]}", verbose)
             opcode, param1_mode, param2_mode, param3_mode = parse_number(
                 self.memory[self.ptr]
             )
+            print(
+                f"Outputs of parse_number: {opcode, param1_mode, param2_mode, param3_mode}"
+            )
             self.opcode = opcode
             printv(
-                f"Current opcode: {self.opcode} ({self.instruction_types[self.opcode]['name']})",
+                f"Current opcode: {self.opcode} ",
                 verbose,
             )
+            printv(({self.instruction_types[self.opcode]["name"]}), verbose)
 
             if self.opcode == 1:  # ADD
-                num1 = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                num2 = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num1 = self.value(param=1, mode=param1_mode)
+                num2 = self.value(param=2, mode=param2_mode)
                 store_pos = self.memory[self.ptr + 3]
 
                 printv(f"Take the sum of {num1} and {num2}:", verbose)
                 result = num1 + num2
                 printv(result, verbose)
-                printv(f"And store it at {store_pos}", verbose)
+                printv(f"And store it at position {store_pos}", verbose)
                 self.memory[store_pos] = result
 
             elif self.opcode == 2:  # MULTIPLY
-                num1 = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                num2 = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num1 = self.value(param=1, mode=param1_mode)
+                num2 = self.value(param=2, mode=param2_mode)
                 store_pos = self.memory[self.ptr + 3]
 
                 printv(f"Take the product of {num1} and {num2}:", verbose)
                 result = num1 * num2
                 printv(result, verbose)
-                printv(f"And store it at {store_pos}", verbose)
+                printv(f"And store it at position {store_pos}", verbose)
                 self.memory[store_pos] = result
 
             elif self.opcode == 3:  # INPUT
@@ -115,6 +125,10 @@ class Computer:
                     intake = self.provided_inputs.pop(0)
                 else:
                     intake = int(input("Please input an integer: "))
+                # if param1_mode == 1:
+                #     raise ValueError(
+                #         "Parameters that an instruction writes to will never be in immediate mode"
+                #     )
                 store_pos = self.memory[self.ptr + 1]
                 printv(
                     f"Storing input value ({intake}) at position {store_pos}", verbose
@@ -126,21 +140,14 @@ class Computer:
                 # which outputs 999 in the "less than 8" case only when given
                 # print(f"Output {self.memory[self.ptr + 1]}") and
                 # "IndexError: list index out of range" with the below. TODO: debug
-                thing_outputted = self.memory[self.memory[self.ptr + 1]]
+                printv(f"Mode {param1_mode}", verbose)
+                thing_outputted = self.value(param=1, mode=param1_mode)
                 print(f"Output {thing_outputted}")
                 self.latest_output = thing_outputted
 
             elif self.opcode == 5:  # JUMP-IF-TRUE
-                num = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                jump_pos = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num = self.value(param=1, mode=param1_mode)
+                jump_pos = self.value(param=2, mode=param2_mode)
                 printv(f"Does {num} != 0?", verbose)
                 if num != 0:
                     printv("Jump condition met", verbose)
@@ -150,16 +157,8 @@ class Computer:
                     printv("Jump condition not met", verbose)
 
             elif self.opcode == 6:  # JUMP-IF-FALSE
-                num = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                jump_pos = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num = self.value(param=1, mode=param1_mode)
+                jump_pos = self.value(param=2, mode=param2_mode)
                 printv(f"Does {num} = 0?", verbose)
                 if num == 0:
                     printv("Jump condition met", verbose)
@@ -169,16 +168,8 @@ class Computer:
                     printv("Jump condition not met", verbose)
 
             elif self.opcode == 7:  # LESS THAN
-                num1 = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                num2 = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num1 = self.value(param=1, mode=param1_mode)
+                num2 = self.value(param=2, mode=param2_mode)
                 store_pos = self.memory[self.ptr + 3]
                 printv(f"Is {num1} < {num2}?", verbose)
                 if num1 < num2:
@@ -191,16 +182,8 @@ class Computer:
                     self.memory[store_pos] = 0
 
             elif self.opcode == 8:  # EQUALS
-                num1 = (
-                    self.memory[self.ptr + 1]  # immediate mode
-                    if param1_mode == 1
-                    else self.memory[self.memory[self.ptr + 1]]  # position mode
-                )
-                num2 = (
-                    self.memory[self.ptr + 2]  # immediate mode
-                    if param2_mode == 1
-                    else self.memory[self.memory[self.ptr + 2]]  # position mode
-                )
+                num1 = self.value(param=1, mode=param1_mode)
+                num2 = self.value(param=2, mode=param2_mode)
                 store_pos = self.memory[self.ptr + 3]
                 printv(f"Does {num1} = {num2}?", verbose)
                 if num1 == num2:
@@ -211,6 +194,15 @@ class Computer:
                     printv("Equality condition not met", verbose)
                     printv(f"Storing value (0) at position {store_pos}", verbose)
                     self.memory[store_pos] = 0
+
+            elif self.opcode == 9:  # ADJUST RELATIVE BASE
+                adjust_amt = self.value(param=1, mode=param1_mode)
+                printv(
+                    f"Adjusting relative base {self.relative_base} by amount {adjust_amt}...",
+                    verbose,
+                )
+                self.relative_base += adjust_amt
+                printv(f"Relative base is now {self.relative_base}", verbose)
 
             elif self.opcode == 99:  # HALT
                 printv(f"Output at position 0: {self.memory[0]}", verbose)
