@@ -58,7 +58,7 @@ class Computer:
         try:
             return self.memory[addr]
         except KeyError:  # far-off memory always initializes at 0
-            for i in range(max(self.memory.keys(), addr + 1)):
+            for i in range(max(self.memory.keys()), addr + 1):
                 self.memory[i] = 0
             # self.memory[addr] = 0
             return self.memory[addr]
