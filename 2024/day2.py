@@ -18,9 +18,7 @@ def is_safe(report: list[int]):
     if not is_monotonic(changes):
         return False
     abs_changes = [abs(change) for change in changes]
-    if max(abs_changes) > MAX_SAFE_DIFF:
-        return False
-    return True
+    return not (max(abs_changes) > MAX_SAFE_DIFF)
 
 
 def is_monotonic(changes: list[int]) -> bool:
@@ -44,13 +42,12 @@ def part2():
         if is_safe(report):
             count_safe += 1
             continue
-        else:
-            for ix, _ in enumerate(report):
-                dampened_report = deepcopy(report)
-                dampened_report.pop(ix)
-                if is_safe(dampened_report):
-                    count_safe += 1
-                    break
+        for ix, _ in enumerate(report):
+            dampened_report = deepcopy(report)
+            dampened_report.pop(ix)
+            if is_safe(dampened_report):
+                count_safe += 1
+                break
     return count_safe
 
 
