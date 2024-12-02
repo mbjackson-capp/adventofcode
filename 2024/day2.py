@@ -18,7 +18,7 @@ def is_safe(report: list[int]):
     if not is_monotonic(changes):
         return False
     abs_changes = [abs(change) for change in changes]
-    if min(abs_changes) < MIN_SAFE_DIFF or max(abs_changes) > MAX_SAFE_DIFF:
+    if max(abs_changes) > MAX_SAFE_DIFF:
         return False
     return True
 
