@@ -42,7 +42,7 @@ def reorder(rules, update: list[int]):
     ctr = Counter([p[0] for p in perms])
     # There is one number left over that isn't on the left of any relevant rule,
     # i.e. that has to come last
-    last = [p[1] for p in perms if p[1] not in ctr][0]
+    last = [n for n in update if n not in ctr][0]
     ctr[last] = 0
     reordered = sorted(update, key=lambda x: ctr[x], reverse=True)
     return reordered
