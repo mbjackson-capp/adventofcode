@@ -1,5 +1,4 @@
 from aocd import get_data
-import networkx as nx
 from itertools import pairwise, permutations
 from collections import Counter
 
@@ -11,13 +10,7 @@ rules = [tuple([int(i) for i in rule.split("|")]) for rule in rules.split("\n")]
 updates = [[int(u) for u in updt.split(",")] for updt in updates.split("\n")]
 
 
-def graph_from_rules(rules) -> nx.DiGraph:
-    G = nx.DiGraph()
-    G.add_edges_from(rules)
-    return G
-
-
-def assess_validities(G: nx.DiGraph, rules, updates: list[int]):
+def assess_validities(rules, updates: list[int]):
     valid_updates = []
     invalid_updates = []
     for update in updates:
@@ -25,7 +18,7 @@ def assess_validities(G: nx.DiGraph, rules, updates: list[int]):
         update_legal = True
         for link in links:
             src, trgt = link
-            if not G.has_edge(src, trgt):
+            if (src, trgt) not in rules:
                 update_legal = False
                 invalid_updates.append(update)
                 break
@@ -38,21 +31,6 @@ def assess_validities(G: nx.DiGraph, rules, updates: list[int]):
 def solve(updates_list: list[int]) -> int:
     middles = [update[len(update) // 2] for update in updates_list]
     return sum(middles)
-
-
-def part1(rules, updates):
-    G = graph_from_rules(rules)
-    valid_updates, _ = assess_validities(G, rules, updates)
-    return solve(valid_updates)
-
-
-def part2(rules, updates):
-    G = graph_from_rules(rules)
-    _, invalid_updates = assess_validities(G, rules, updates)
-    reordered = []
-    for update in invalid_updates:
-        reordered.append(reorder(rules, update))
-    return solve(reordered)
 
 
 def reorder(rules, update: list[int]):
@@ -68,6 +46,19 @@ def reorder(rules, update: list[int]):
     ctr[last] = 0
     reordered = sorted(update, key=lambda x: ctr[x], reverse=True)
     return reordered
+
+
+def part1(rules, updates):
+    valid_updates, _ = assess_validities(rules, updates)
+    return solve(valid_updates)
+
+
+def part2(rules, updates):
+    _, invalid_updates = assess_validities(rules, updates)
+    reordered_updates = []
+    for update in invalid_updates:
+        reordered_updates.append(reorder(rules, update))
+    return solve(reordered_updates)
 
 
 part1_solution = part1(rules, updates)
