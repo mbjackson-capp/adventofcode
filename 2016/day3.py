@@ -1,6 +1,5 @@
 from aocd import get_data
 import re
-from itertools import tee
 
 # set session token first - https://github.com/wimglenn/advent-of-code-wim/issues/1
 
