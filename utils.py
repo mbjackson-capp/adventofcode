@@ -1,3 +1,6 @@
+# Utility functions reused in multiple Advent of Code coding challenges.
+# By Matt Jackson (GitHub: mbjackson-capp)
+
 import numpy as np
 
 
@@ -51,3 +54,8 @@ def neighbors(arr, x, y, include_diag=False):
         this_x, this_y = tuple
         neighbors.append(arr[this_x][this_y])
     return neighbors
+
+
+def manhattan_dist(node_a: tuple[int, int], node_b: tuple[int, int]) -> int:
+    """Get the L1 norm / Manhattan distance between two points on a 2D grid."""
+    return abs(node_b[0] - node_a[0]) + abs(node_b[1] - node_a[1])
