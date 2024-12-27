@@ -6,43 +6,10 @@ from utils import gridify
 np.set_printoptions(linewidth=1000)
 
 
-input = get_data(day=15, year=2024)
-
-example = """##########
-#..O..O.O#
-#......O.#
-#.OO..O.O#
-#..O@..O.#
-#O#..O...#
-#O..O..O.#
-#.OO.O.OO#
-#....O...#
-##########
-
-<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
-vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
-><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
-<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
-^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
-^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
->^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
-<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
-^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"""
-
-example2 = """########
-#..O.O.#
-##@.O..#
-#...O..#
-#.#.O..#
-#...O..#
-#......#
-########
-
-<^^>>>vv<v>>v<<"""
-
-
-def parse_input(data, part=1):
+def parse_input(data: str, part: int=1) -> dict:
+    """Turn input into its constituent warehouse (representing each
+    set of relevant components as a key-value pair in a dict) and its
+    string of step instructions."""
     arr, steps = data.split("\n\n")
     if part == 2:
         arr = re.sub("#", "##", arr)
@@ -54,9 +21,8 @@ def parse_input(data, part=1):
 
     walls = set()
     boxes = set()
-    floor = set()
-    if part == 2:
-        wide_boxes = set()
+    box_lefts = set()
+    box_rights = set()
     for x, row in enumerate(arr):
         for y, cell_val in enumerate(row):
             if cell_val == "@":
@@ -64,19 +30,25 @@ def parse_input(data, part=1):
             elif cell_val == "O":
                 boxes.add((x, y))
             elif part == 2 and cell_val == "[" and row[y + 1] == "]":
-                wide_boxes.add(((x, y), (x, y + 1)))
+                box_lefts.add((x,y))
+                box_rights.add((x, y+1))
             elif cell_val == "#":
                 walls.add((x, y))
-            elif cell_val == ".":
-                floor.add((x, y))
-    warehouse = {"robot": robot, "walls": walls, "boxes": boxes, "floor": floor}
-    if part == 2:
-        warehouse["wide_boxes"] = wide_boxes
+
+    warehouse = {
+        "robot": robot, 
+        "walls": walls, 
+        "boxes": boxes,
+        "box_lefts": box_lefts,
+        "box_rights": box_rights
+        }
 
     return warehouse, steps
 
 
-def map_out(warehouse: dict):
+def map_out(warehouse: dict) -> np.array:
+    """Returns a graphical representation of the warehouse dictionary, as shown 
+    in problem statement. For debugging purposes only."""
     # Assumes outer edges are all wall in all possible inputs
     x_max = max([i[0] for i in warehouse["walls"]]) + 1
     y_max = max(i[1] for i in warehouse["walls"]) + 1
@@ -90,13 +62,9 @@ def map_out(warehouse: dict):
                 new_row.append("O")
             elif (x, y) == warehouse["robot"]:
                 new_row.append("@")
-            elif "wide_boxes" in warehouse.keys() and (x, y) in [
-                i[0] for i in warehouse["wide_boxes"]
-            ]:
+            elif "box_lefts" in warehouse.keys() and (x, y) in warehouse["box_lefts"]:
                 new_row.append("[")
-            elif "wide_boxes" in warehouse.keys() and (x, y) in [
-                i[1] for i in warehouse["wide_boxes"]
-            ]:
+            elif "box_rights" in warehouse.keys() and (x, y) in warehouse["box_rights"]: 
                 new_row.append("]")
             else:
                 new_row.append(".")
@@ -120,72 +88,126 @@ def spot_ahead_of(start: tuple[int, int], dir: str) -> tuple[int, int]:
 
 def do_one_step(wh: dict, step: str) -> dict:
     spot_ahead = spot_ahead_of(wh["robot"], step)
+    # Do-nothing case: Robot up against wall
     if spot_ahead in wh["walls"]:
-        return wh  # do nothing if robot would go into a wall
-    elif spot_ahead_of(wh["robot"], step) in wh["boxes"]:
+        return wh  
+    
+    # PART 1 BOX-PUSHING LOGIC
+    elif spot_ahead in wh["boxes"]:
         boxes_ahead = [spot_ahead]
         further_spot_ahead = spot_ahead_of(spot_ahead, step)
         while True:
             if further_spot_ahead in wh["boxes"]:
                 boxes_ahead.append(further_spot_ahead)
                 further_spot_ahead = spot_ahead_of(further_spot_ahead, step)
-            elif further_spot_ahead in wh["walls"]:
-                return wh  # these boxes can't be pushed ahead
+            elif further_spot_ahead in wh["walls"]: # these boxes can't be pushed ahead
+                return wh  
             else:
                 break
         wh["boxes"].remove(spot_ahead)
         wh["boxes"].add(further_spot_ahead)
         wh["robot"] = spot_ahead
         return wh
-    else:  # robot can pass forward without incident
-        wh["robot"] = spot_ahead_of(wh["robot"], step)
+    
+    # PART 2 BOX-PUSHING LOGIC
+    elif (spot_ahead in wh["box_rights"] or spot_ahead in wh["box_lefts"]):
+        box_rights_ahead = [spot_ahead] if spot_ahead in wh['box_rights'] else []
+        box_lefts_ahead = [spot_ahead] if spot_ahead in wh['box_lefts'] else []
+
+        # 2a. PUSH BOXES LEFT OR RIGHT
+        # Still linear; add alternating box_right and box_left elements in front of 
+        # this point until you hit a wall (in which case return immediately) or
+        # until you hit empty space
+        if step in ('<', '>'):  
+            further_spot_ahead = spot_ahead_of(spot_ahead, step)
+            while True:
+                if further_spot_ahead in wh['box_rights']:
+                    box_rights_ahead.append(further_spot_ahead)
+                    further_spot_ahead = spot_ahead_of(further_spot_ahead, step)
+                elif further_spot_ahead in wh['box_lefts']:
+                    box_lefts_ahead.append(further_spot_ahead)
+                    further_spot_ahead = spot_ahead_of(further_spot_ahead, step)
+                elif further_spot_ahead in wh['walls']: # these boxes can't be pushed ahead
+                    return wh
+                else:
+                    break 
+
+        # 2b. PUSH BOXES UP OR DOWN
+        # Each box can have up to two boxes ahead of it -- they could branch out
+        # into V-shaped or tree-like patterns, converge back together, etc.
+        # If there is ANY wall in front of ANY box ahead, NONE of them get pushed.
+        # Advance in a BFS-like manner with a queue to detect new boxes in front of
+        # already-detected ones, until you hit a wall in front of any box or see
+        # empty floor in front of every box.
+        elif step in ('^', 'v'):
+            # add the other half of the first box
+            if box_rights_ahead:
+                other_half = spot_ahead_of(spot_ahead, '<')
+                box_lefts_ahead.append(other_half)
+            elif box_lefts_ahead:
+                other_half = spot_ahead_of(spot_ahead, '>')
+                box_rights_ahead.append(other_half)
+
+            q = [spot_ahead_of(spot_ahead, step), spot_ahead_of(other_half, step)]
+            while len(q) > 0:
+                further_spot_ahead = q.pop(0)
+
+                if further_spot_ahead in wh['walls']:
+                    return wh
+                
+                elif further_spot_ahead in wh['box_rights']:
+                    other_half = spot_ahead_of(further_spot_ahead, '<')
+                    box_rights_ahead.append(further_spot_ahead)
+                    box_lefts_ahead.append(other_half)
+                    q.append(spot_ahead_of(further_spot_ahead, step))
+                    q.append(spot_ahead_of(other_half, step))  
+
+                elif further_spot_ahead in wh['box_lefts']:
+                    other_half = spot_ahead_of(further_spot_ahead, '>')
+                    box_lefts_ahead.append(further_spot_ahead)
+                    box_rights_ahead.append(other_half)
+                    q.append(spot_ahead_of(further_spot_ahead, step))
+                    q.append(spot_ahead_of(other_half, step))
+
+                else: # There is unoccupied floor ahead of this box segment. Good!
+                    continue 
+
+        # Push all spotted box segments ahead by one and move robot ahead
+        box_rights_to_add = [spot_ahead_of(br, step) for br in box_rights_ahead]
+        box_lefts_to_add = [spot_ahead_of(bl, step) for bl in box_lefts_ahead]
+        wh['box_rights'] = (wh['box_rights'] - set(box_rights_ahead)) | set(box_rights_to_add)
+        wh['box_lefts'] = (wh['box_lefts'] - set(box_lefts_ahead)) | set(box_lefts_to_add)
+        wh['robot'] = spot_ahead
+        return wh
+    
+    # Move-without-incident case: Robot can pass forward on floor
+    else:  
+        wh["robot"] = spot_ahead
         return wh
 
 
-"""
-HOW TO CHANGE BOX PUSHING LOGIC FOR PART 2
-Robot on left or right of box: Logic stays basically the same, as you can only
-push boxes in a straight line or not at all. Keep checking if the next spot ahead
-is part of a valid wide box. Then, if you reach a wall, do nothing. Otherwise,
-delete ALL wide boxes you found, and add new boxes where both points within the box
-have spot_ahead_of() applied to them. And move robot ahead 1.
-
-Robot up or down from box: Logic changes, since each box can have up to two boxes
-ahead of it -- they could diverge in a V pattern or come back together etc.
-Advance in a BFS-like manner to determine what to do, adding new boxes to queue
-when detected.
-while queue is not empty:
-    - pop wide box from queue
-    - Look at two spots directly ahead of this wide box. 
-    - If either spot is a wall:
-        - break, return warehouse as-is -- finding any wall means none of the boxes
-        back to the original can be pushed forward
-    - If both spots are field:
-        - add this box to boxes_to_push_ahead, continue
-    - If spot ahead left is ']', add it and spot to left of that to queue as new wide box
-    - If spot ahead right is '[', add it and spot to right of that to queue as new wide box
-    - If spots ahead are '[]', add them to queue as new wide box
-delete ALL boxes in boxes_to_push_ahead from warehouse['wide_boxes']
-add NEW boxes that each have both points shifted up to warehouse['wide_boxes']
-move robot ahead one
-return warehouse
-you could keep box_lefts and box_rights as separate objects if you want
-"""
-
-
-def part1(data):
-    wh, steps = parse_input(data)
+def run(data, part=1, debug=False):
+    wh, steps = parse_input(data, part=part)
+    if debug:
+        print(f"Initial state:")
+        print(map_out(wh))
     for _, step in enumerate(steps):
+        if debug:
+            print(f"Move {step}:")
         wh = do_one_step(wh, step)
-    gps_coordinates = [100 * box[0] + box[1] for box in wh["boxes"]]
+        if debug:
+            print(map_out(wh))
+    gps_coordinates = (
+        [100 * box[0] + box[1] for box in wh["boxes"]] 
+        if part == 1 
+        else [100 * box[0] + box[1] for box in wh["box_lefts"]]
+    )
     return sum(gps_coordinates)
 
 
 if __name__ == "__main__":
-    part1_solution = part1(input)
+    input = get_data(day=15, year=2024)
+    part1_solution = run(input)
     print(f"Part 1 solution: {part1_solution}")
-
-    wh2, steps2 = parse_input(example, part=2)
-    print(map_out(wh2))
-    print(wh2["wide_boxes"])
-    # TODO: part2_solution = part2(input)
+    part2_solution = run(input, part=2)
+    print(f"Part 2 solution: {part2_solution}")
