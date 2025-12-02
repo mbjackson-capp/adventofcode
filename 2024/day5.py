@@ -3,7 +3,7 @@ from itertools import pairwise, permutations
 from collections import Counter
 
 # set session token first - https://github.com/wimglenn/advent-of-code-wim/issues/1
-# Problem statement: https://adventofcode.com/2024/day/4
+# Problem statement: https://adventofcode.com/2024/day/5
 
 rules, updates = get_data(day=5, year=2024).split("\n\n")
 rules = [tuple([int(i) for i in rule.split("|")]) for rule in rules.split("\n")]
