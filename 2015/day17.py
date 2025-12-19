@@ -13,8 +13,7 @@ def parse_input(data: str) -> Tuple[Tuple]:
 @cache
 def ways_to_fill(liters: int, containers: Tuple[int | None]) -> Set[Tuple]:
     """Return all unique ways that a tuple of containers of known sizes can
-    be filled with n liters of eggnog.
-    This takes a few seconds even with cache enabled. TODO: speed up"""
+    be filled with n liters of eggnog."""
     if liters < 0:
         # Base case: illegal state (you must have overfilled)
         return set()
@@ -28,7 +27,7 @@ def ways_to_fill(liters: int, containers: Tuple[int | None]) -> Set[Tuple]:
         for i, container in enumerate(containers):
             if container is not None:
                 vol = container
-                next_containers = [j for j in deepcopy(containers)]
+                next_containers = [j for j in containers]
                 # Because order matters if multiple containers have same volume,
                 # we must mark this *particular* container full by nulling it
                 next_containers[i] = None
@@ -55,7 +54,6 @@ def solve(liters: int, data: str) -> int:
 
 
 if __name__ == "__main__":
-    print("Now solving...This may take a few seconds...")
     ans1, ans2 = solve(150, input)
     print(f"Part 1 answer: {ans1}")
     print(f"Part 2 answer: {ans2}")
