@@ -2,16 +2,6 @@ from aocd import get_data
 from typing import Tuple
 import re
 from functools import cache
-import time
-
-
-test_input1 = """H => HO
-H => OH
-O => HH
-
-HOH"""
-
-# test_input2 = test_input1 + "OHO"
 
 
 def parse_input(data: str, reverse=False) -> Tuple[dict, str]:
