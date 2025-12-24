@@ -2,8 +2,8 @@ from aocd import get_data
 from functools import cache
 from typing import List, Set
 from copy import deepcopy
+from math import prod
 
-input = get_data(day=24, year=2015)
 
 simple_test = """1
 2
@@ -21,6 +21,18 @@ test_input = """1
 9
 10
 11"""
+
+test_input2 = """1
+2
+3
+7
+11
+13
+17
+19
+23
+31
+37"""
 
 """NOTES
 
@@ -81,7 +93,7 @@ def packageize(data: str) -> frozenset[int]:
 
 # Let's do a shitty listy version and then reformat for @cache
 def valid_sleighs(packages: frozenset[int], n_containers: int = 3):
-    containers = [set() for _ in range(n_containers)]
+    containers = tuple(frozenset() for _ in range(n_containers))
     # containers = frozenset({frozenset() for _ in range(n_containers)})
     target = sum(packages) // n_containers
     print(f"We want a weight of {target} in each of {n_containers} containers. Go!")
@@ -95,6 +107,10 @@ def valid_sleighs(packages: frozenset[int], n_containers: int = 3):
 # and thus this becomes hashable and thus memoizable. let's see if that's enough
 
 
+# okay, even with @cache it takes ~5-6 for n=9 packages
+# and that goes up to ~10-12 seconds for n=10 packages.
+# we got exponential runtime still
+@cache
 def valid_sleigh_helper(
     packages: frozenset[int], target: int, containers
 ) -> Set[frozenset[frozenset[int]]]:
@@ -102,30 +118,49 @@ def valid_sleigh_helper(
     # the returns aren't changing so those can be frozensets
     # Base case: a container is overfull
     if any(sum(c) > target for c in containers):
-        # print(f"Overfull container among {containers}")
+        print(f"Overfull container among {containers}")
         return set()
     # Base cases: No packages left
     if len(packages) == 0:
         if all(sum(c) == target for c in containers):
             print(f"No packages left and {containers} is valid! Append to response")
+            print(containers)
             return {frozenset(frozenset(c) for c in containers)}
         else:  # this should never happen
             raise ValueError(f"No packages left and {containers} should never happen")
     # Recursive step: Consider each way to add one package to any one of the
     # containers
+    # print("Recurse down")
     result = set()
     for package in packages:
         for j, container in enumerate(containers):
             new_packages = frozenset({p for p in packages if p != package})
-            new_containers = deepcopy(containers)
-            new_containers[j].add(package)
-            new = valid_sleigh_helper(new_packages, target, new_containers)
-            result = result | new
-    if result:
-        print(result)
+            new_containers = list(containers)
+            new_containers[j] = frozenset(container | {package})
+            if sum(new_containers[j]) <= target:
+                new = valid_sleigh_helper(new_packages, target, tuple(new_containers))
+                result = result | new
     return result
 
 
-simple_packages = packageize(test_input)
-result = valid_sleighs(simple_packages)
-print(result)
+def quantum_entanglement(package_config) -> int:
+    min_len_so_far = float("inf")
+    for s in package_config:
+        if min(len(subset) for subset in s) < min_len_so_far:
+            min_len_so_far = min(len(subset) for subset in s)
+    qe = float("inf")
+    for s in package_config:
+        if min(len(subset) for subset in s) == min_len_so_far:
+            this_qe = min(prod(subset) for subset in s if len(subset) == min_len_so_far)
+            if this_qe < qe:
+                qe = this_qe
+    return qe
+
+
+input = get_data(day=24, year=2015)
+if __name__ == "__main__":
+    simple_packages = packageize(test_input)
+    result = valid_sleighs(simple_packages)
+    for s in result:
+        print(s)
+    print(quantum_entanglement(result))
