@@ -6,15 +6,6 @@ import re
 
 # Problem statement: https://adventofcode.com/2018/day/3
 
-# Do this the other way. Keep a big dict of points and make the value of each
-# a set/list of claims that it is in.
-
-test_input = """#1 @ 1,3: 4x4
-#2 @ 3,1: 4x4
-#3 @ 5,5: 2x2""".split(
-    "\n"
-)
-
 
 def parse_claim(claim):
     """Convert a claim string into a set of points that it covers, plus its id"""
